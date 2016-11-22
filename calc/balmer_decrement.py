@@ -22,7 +22,7 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 import pylab
-from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.backends.backend_pdf import PdfPages # + on 22/11/2016
 
 def ratios_Te_ne_plot(silent=False, verbose=True):
     '''
