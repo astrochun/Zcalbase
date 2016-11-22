@@ -22,8 +22,9 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 import pylab
+from matplotlib.backends.backend_pdf import PdfPages
 
-def HaHb_Te_ne_plot(silent=True, verbose=False):
+def ratios_Te_ne_plot(silent=False, verbose=True):
     '''
     Function to plot Ha/Hb vs T_e and n_e. This is for illustrative purpose
 
@@ -44,44 +45,70 @@ def HaHb_Te_ne_plot(silent=True, verbose=False):
     -----
     Created by Chun Ly, 21 November 2016
     Modified by Chun Ly, 22 November 2016
+     - Labeling for type
+     - Handles multiple Balmer decrements and produces a multi-page PDF
+     - Renamed from HaHb_Te_ne_plot to ratios_Te_ne_plot
+     - Output PDF has been changed.
     '''
 
-    if silent == False: print '### Begin grid_plot() | '+systime()
+    if silent == False:
+        print '### Begin balmer_decrement.ratios_Te_ne_plot() | '+systime()
 
     T_arr = np.arange(0.5,2.1,0.1) * 1E4
 
     N_arr  = np.logspace(1,5,3)
     style0 = ['blue', 'green', 'red']
-    
-    fig, ax = plt.subplots()
-    for ii in range(len(N_arr)):
-        ratio0, recfile = HaHb(T_arr, N_arr[ii], product=True)
-
-        t_label = r'$n_e = 10^'+str(int(np.log10(N_arr[ii])))+'$'+r' cm$^{-3}$'
-        ax.plot(T_arr / 1E4, ratio0, style0[ii], label=t_label)
-    #endfor
 
     # + on 22/11/2016
-    if recfile == 'h_i_rec_SH95.fits':
-        txt0 = 'Storey and Hummer (1995)'
-        ax.annotate(txt0, (0.01,0.01), xycoords='axes fraction',
-                    ha='left', va='bottom')
-        
-    ax.set_xlabel(r'Electron Temperature, $T_e$ [$10^4$ K]', fontsize='16')
-    ax.set_ylabel(r'I(H$\alpha$)/I(H$\beta$)', fontsize='16')
-    ax.minorticks_on()
-    
-    ax.set_xlim([0.4,2.1])
-    
-    ax.legend(loc='upper right', frameon=False)
+    r_type0  = ['HaHb', 'HgHb', 'HdHb']
+    ylabel0 = [r'I(H$\alpha$)/I(H$\beta$)', r'I(H$\gamma$)/I(H$\beta$)',
+               r'I(H$\delta$)/I(H$\beta$)']
 
+    # Moved up on 22/11/2016 | outfile Mod on 22/11/2016
     out_dir0 = os.path.dirname(__file__)+'/'
-    outfile  = out_dir0 + 'HaHb_Te_ne_grid.pdf'
+    outfile  = out_dir0 + 'Balmer_decrement_ratios_Te_ne_grid.pdf'
+
+    pp = PdfPages(outfile) # + on 22/11/2016
+
+    # Mod on 22/11/2016
+    for tt in range(len(r_type0)):
+        fig, ax = plt.subplots()
+        for ii in range(len(N_arr)):
+            # Mod on 22/11/2016 to use intrinsic_ratios()
+            ratio0, recfile = intrinsic_ratios(T_arr, N_arr[ii], r_type=r_type0[tt], 
+                                               product=True)
+            
+            t_label = r'$n_e = 10^'+str(int(np.log10(N_arr[ii])))+'$'+r' cm$^{-3}$'
+            ax.plot(T_arr / 1E4, ratio0, style0[ii], label=t_label)
+        #endfor
+
+        # + on 22/11/2016
+        if recfile == 'h_i_rec_SH95.fits':
+            txt0 = 'Storey and Hummer (1995)'
+            ax.annotate(txt0, (0.01,0.01), xycoords='axes fraction',
+                        ha='left', va='bottom')
+        
+        ax.set_xlabel(r'Electron Temperature, $T_e$ [$10^4$ K]', fontsize='16')
+        ax.set_ylabel(ylabel0[tt], fontsize='16')
+        ax.minorticks_on()
+    
+        ax.set_xlim([0.4,2.1])
+
+        # Mod on 22/11/2016
+        if r_type0[tt] == 'HaHb':
+            loc0 = 'upper right'
+        else: loc0 = 'lower right'
+        ax.legend(loc=loc0, frameon=False)
+
+        fig.savefig(pp, format='pdf', bbox_inches='tight')
+        fig.clear()
+    #endfor
+
     if silent == False: print '### Writing : ', outfile
-    fig.savefig(outfile, bbox_inches='tight')
+    pp.close()
 
-    if silent == False: print '### End grid_plot() | '+systime()
-
+    if silent == False:
+        print '### End balmer_decrement.ratios_Te_ne_plot() | '+systime()
 #enddef
 
 def get_k_values(wave, law='CCM89', silent=True, verbose=False):
@@ -170,6 +197,12 @@ def intrinsic_ratios(t0, n0, r_type='HaHb', product=False, silent=True, verbose=
     if silent == False:
         print '### Begin balmer_decrement.intrinsic_ratios | '+systime()
 
+    if r_type != 'HaHb' and r_type != 'HgHb' and r_type != 'HdHb':
+        print "Invalid [r_type]"
+        print "Exiting!!!"
+        return
+    #endif
+
     H1 = pn.RecAtom('H', 1)
 
     if silent == False:
@@ -184,9 +217,9 @@ def intrinsic_ratios(t0, n0, r_type='HaHb', product=False, silent=True, verbose=
     Hdelta = H1.getEmissivity(tem=t0, den=n0, lev_i=6, lev_j=2, product=product)
 
     # + on 22/11/2016    
-    if r_type = 'HaHb': ratio0 = Halpha/Hbeta
-    if r_type = 'HgHb': ratio0 = Hgamma/Hbeta
-    if r_type = 'HdHb': ratio0 = Hdelta/Hbeta
+    if r_type == 'HaHb': ratio0 = Halpha/Hbeta
+    if r_type == 'HgHb': ratio0 = Hgamma/Hbeta
+    if r_type == 'HdHb': ratio0 = Hdelta/Hbeta
     
     if silent == False:
         print '### End balmer_decrement.intrinsic_ratios | '+systime()
