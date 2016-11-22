@@ -24,7 +24,6 @@ import matplotlib.pyplot as plt
 import pylab
 
 def HaHb_Te_ne_plot(silent=True, verbose=False):
-
     '''
     Function to plot Ha/Hb vs T_e and n_e. This is for illustrative purpose
 
@@ -44,6 +43,7 @@ def HaHb_Te_ne_plot(silent=True, verbose=False):
     Notes
     -----
     Created by Chun Ly, 21 November 2016
+    Modified by Chun Ly, 22 November 2016
     '''
 
     if silent == False: print '### Begin grid_plot() | '+systime()
@@ -61,6 +61,7 @@ def HaHb_Te_ne_plot(silent=True, verbose=False):
         ax.plot(T_arr / 1E4, ratio0, style0[ii], label=t_label)
     #endfor
 
+    # + on 22/11/2016
     if recfile == 'h_i_rec_SH95.fits':
         txt0 = 'Storey and Hummer (1995)'
         ax.annotate(txt0, (0.01,0.01), xycoords='axes fraction',
@@ -83,8 +84,52 @@ def HaHb_Te_ne_plot(silent=True, verbose=False):
 
 #enddef
 
-def HaHb(t0, n0, product=False, silent=True, verbose=False):
+def get_k_values(wave, law='CCM89', silent=True, verbose=False):
+    '''
+    Function to get k(lambda):
+     A(lambda) = k(lambda) * E(B-V)
 
+    Parameters
+    ----------
+    wave : float or array like
+      Wavelength in units of Angstroms
+
+    law : string
+      String for dust attenuation "law". Default: "CCM89".
+      Full list available from RC.getLaws()
+      Options are:
+       'G03 LMC',  'K76', 'F99-like', 'F88 F99 LMC', 'No correction',
+       'SM79 Gal', 'MCC99 FM90 LMC', 'CCM89 Bal07', 'CCM89 oD94',
+       'S79 H83 CCM89', 'F99', 'CCM89'
+ 
+    silent : boolean
+      Turns off stdout messages. Default: True
+
+    verbose : boolean
+      Turns on additional stdout messages. Default: False
+	  
+    Returns
+    -------
+    PDF called 'HaHb_Te_ne_grid.pdf' is saved in Zcalbase.calc directory path
+
+    Notes
+    -----
+    Created by Chun Ly, 22 November 2016
+    '''
+
+    if silent == False:
+        print '### Begin balmer_decrement.get_k_values() | '+systime()
+
+    RC = pn.RedCorr(E_BV = 1.0)
+    RC.law = law
+
+    if silent == False:
+        print '### End balmer_decrement.get_k_values() | '+systime()
+
+    return np.log10(RC.getCorr(wave)) / 0.4
+#enddef
+
+def HaHb(t0, n0, product=False, silent=True, verbose=False):
     '''
     Function to obtain Ha/Hb flux ratio
 
@@ -114,7 +159,7 @@ def HaHb(t0, n0, product=False, silent=True, verbose=False):
     Created by Chun Ly, 21 November 2016
     '''
 
-    if silent == False: print '### Begin main | '+systime()
+    if silent == False: print '### Begin balmer_decrement.HaHb | '+systime()
 
     H1 = pn.RecAtom('H', 1)
 
@@ -127,8 +172,62 @@ def HaHb(t0, n0, product=False, silent=True, verbose=False):
     Hbeta  = H1.getEmissivity(tem=t0, den=n0, lev_i=4, lev_j=2,
                               product=product)
 
-    if silent == False: print '### End main | '+systime()
+    if silent == False: print '### End balmer_decrement.HaHb | '+systime()
 
     return Halpha/Hbeta, H1.recFitsFile
 #enddef
 
+def EBV_determine(HaHb_ratio, Te, ne, law='CCM89', silent=True, verbose=False):
+    '''
+    Function to get nebular E(B-V) from Ha/Hb ratio
+
+    Parameters
+    ----------
+    HaHb_ratio : float or array like
+      The observed Ha/Hb flux ratio from spectra
+
+    Te : float or array like
+      Electron temperature in Kelvin
+
+    ne : float or array like
+      Electron density in cm^-3
+
+    law : string
+      String for dust attenuation "law". Default: "CCM89".
+      Full list available from RC.getLaws()
+      Options are:
+       'G03 LMC',  'K76', 'F99-like', 'F88 F99 LMC', 'No correction',
+       'SM79 Gal', 'MCC99 FM90 LMC', 'CCM89 Bal07', 'CCM89 oD94',
+       'S79 H83 CCM89', 'F99', 'CCM89'
+ 
+    silent : boolean
+      Turns off stdout messages. Default: True
+
+    verbose : boolean
+      Turns on additional stdout messages. Default: False
+	  
+    Returns
+    -------
+    EBV0 : float or array like
+      Nebular E(B-V)
+
+    Notes
+    -----
+    Created by Chun Ly, 22 November 2016
+    '''
+
+    if silent == False:
+        print '### Begin balmer_decrement.EBV_determine() | '+systime()
+
+    k_Ha = get_k_values(6562.80, law, silent=silent, verbose=verbose)
+    k_Hb = get_k_values(4861.32, law, silent=silent, verbose=verbose)
+    
+    HaHb0, _ = HaHb(Te, ne, product=False, silent=True, verbose=False)
+
+    EBV0 = np.log10(HaHb_ratio / HaHb0) / -0.4 / (k_Ha - k_Hb)
+
+    if silent == False:
+        print '### End balmer_decrement.EBV_determine() | '+systime()
+
+    return EBV0, HaHb0
+#enddef
