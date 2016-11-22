@@ -202,8 +202,10 @@ def intrinsic_ratios(t0, n0, r_type='HaHb', product=False, silent=True, verbose=
     if silent == False:
         print '### Begin balmer_decrement.intrinsic_ratios | '+systime()
 
+    # + on 22/11/2016
     if r_type != 'HaHb' and r_type != 'HgHb' and r_type != 'HdHb':
         print "Invalid [r_type]"
+        print "Options are 'HaHb', 'HgHb', 'HdHb'"
         print "Exiting!!!"
         return
     #endif
@@ -214,17 +216,20 @@ def intrinsic_ratios(t0, n0, r_type='HaHb', product=False, silent=True, verbose=
         print '### Using the following atomic data'
         print H1.recFitsFullPath
         
-    Halpha = H1.getEmissivity(tem=t0, den=n0, lev_i=3, lev_j=2, product=product)
-    Hbeta  = H1.getEmissivity(tem=t0, den=n0, lev_i=4, lev_j=2, product=product)
+    Hbeta = H1.getEmissivity(tem=t0, den=n0, lev_i=4, lev_j=2, product=product)
 
-    # + on 22/11/2016
-    Hgamma = H1.getEmissivity(tem=t0, den=n0, lev_i=5, lev_j=2, product=product)
-    Hdelta = H1.getEmissivity(tem=t0, den=n0, lev_i=6, lev_j=2, product=product)
+    # Mod on 22/11/2016
+    if r_type == 'HaHb': 
+        Halpha = H1.getEmissivity(tem=t0, den=n0, lev_i=3, lev_j=2, product=product)
+        ratio0 = Halpha/Hbeta
 
-    # + on 22/11/2016    
-    if r_type == 'HaHb': ratio0 = Halpha/Hbeta
-    if r_type == 'HgHb': ratio0 = Hgamma/Hbeta
-    if r_type == 'HdHb': ratio0 = Hdelta/Hbeta
+    if r_type == 'HgHb':
+        Hgamma = H1.getEmissivity(tem=t0, den=n0, lev_i=5, lev_j=2, product=product)
+        ratio0 = Hgamma/Hbeta
+
+    if r_type == 'HdHb':
+        Hdelta = H1.getEmissivity(tem=t0, den=n0, lev_i=6, lev_j=2, product=product)
+        ratio0 = Hdelta/Hbeta
     
     if silent == False:
         print '### End balmer_decrement.intrinsic_ratios | '+systime()
@@ -284,6 +289,7 @@ def EBV_determine(ratio0, Te, ne, r_type='HaHb', law='CCM89',
 
     if r_type != 'HaHb' and r_type != 'HgHb' and r_type != 'HdHb':
         print "Invalid [r_type]"
+        print "Options are 'HaHb', 'HgHb', 'HdHb'"
         print "Exiting!!!"
         return
     #endif
