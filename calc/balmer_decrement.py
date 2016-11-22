@@ -129,9 +129,9 @@ def get_k_values(wave, law='CCM89', silent=True, verbose=False):
     return np.log10(RC.getCorr(wave)) / 0.4
 #enddef
 
-def HaHb(t0, n0, product=False, silent=True, verbose=False):
+def intrinsic_ratios(t0, n0, r_type='HaHb', product=False, silent=True, verbose=False):
     '''
-    Function to obtain Ha/Hb flux ratio
+    Function to obtain Ha/Hb, Hg/Hb, or Hd/Hb flux ratios
 
     Parameters
     ----------
@@ -150,16 +150,25 @@ def HaHb(t0, n0, product=False, silent=True, verbose=False):
 
     verbose : boolean
       Turns on additional stdout messages. Default: False
-	  
+
     Returns
     -------
+     ratio0 : float or array like
+       Intrinsic Balmer decrement ratios, Ha/Hb, Hg/Hb, Hd/Hb
+
+     recFitsFile : string
+       Name of FITS file containing recombination coefficients
 
     Notes
     -----
     Created by Chun Ly, 21 November 2016
+    Modified by Chun Ly, 22 November 2016
+     - Previously called HaHb() function
+     - Fix to allow for other balmer decrement options
     '''
 
-    if silent == False: print '### Begin balmer_decrement.HaHb | '+systime()
+    if silent == False:
+        print '### Begin balmer_decrement.intrinsic_ratios | '+systime()
 
     H1 = pn.RecAtom('H', 1)
 
@@ -167,14 +176,22 @@ def HaHb(t0, n0, product=False, silent=True, verbose=False):
         print '### Using the following atomic data'
         print H1.recFitsFullPath
         
-    Halpha = H1.getEmissivity(tem=t0, den=n0, lev_i=3, lev_j=2,
-                              product=product)
-    Hbeta  = H1.getEmissivity(tem=t0, den=n0, lev_i=4, lev_j=2,
-                              product=product)
+    Halpha = H1.getEmissivity(tem=t0, den=n0, lev_i=3, lev_j=2, product=product)
+    Hbeta  = H1.getEmissivity(tem=t0, den=n0, lev_i=4, lev_j=2, product=product)
 
-    if silent == False: print '### End balmer_decrement.HaHb | '+systime()
+    # + on 22/11/2016
+    Hgamma = H1.getEmissivity(tem=t0, den=n0, lev_i=5, lev_j=2, product=product)
+    Hdelta = H1.getEmissivity(tem=t0, den=n0, lev_i=6, lev_j=2, product=product)
 
-    return Halpha/Hbeta, H1.recFitsFile
+    # + on 22/11/2016    
+    if r_type = 'HaHb': ratio0 = Halpha/Hbeta
+    if r_type = 'HgHb': ratio0 = Hgamma/Hbeta
+    if r_type = 'HdHb': ratio0 = Hdelta/Hbeta
+    
+    if silent == False:
+        print '### End balmer_decrement.intrinsic_ratios | '+systime()
+
+    return ratio0, H1.recFitsFile
 #enddef
 
 def EBV_determine(HaHb_ratio, Te, ne, law='CCM89', silent=True, verbose=False):
