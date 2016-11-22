@@ -39,13 +39,14 @@ def ratios_Te_ne_plot(silent=False, verbose=True):
 	  
     Returns
     -------
-    PDF called 'HaHb_Te_ne_grid.pdf' is saved in Zcalbase.calc directory path
+    PDF called 'Balmer_decrement_ratios_Te_ne_grid.pdf' is saved in
+    Zcalbase.calc directory path
 
     Notes
     -----
     Created by Chun Ly, 21 November 2016
     Modified by Chun Ly, 22 November 2016
-     - Labeling for type
+     - Labeling for recombination file info
      - Handles multiple Balmer decrements and produces a multi-page PDF
      - Renamed from HaHb_Te_ne_plot to ratios_Te_ne_plot
      - Output PDF has been changed.
@@ -128,7 +129,8 @@ def get_k_values(wave, law='CCM89', silent=True, verbose=False):
        'G03 LMC',  'K76', 'F99-like', 'F88 F99 LMC', 'No correction',
        'SM79 Gal', 'MCC99 FM90 LMC', 'CCM89 Bal07', 'CCM89 oD94',
        'S79 H83 CCM89', 'F99', 'CCM89'
- 
+       - See pn.RedCorr.printLaws() for more details
+
     silent : boolean
       Turns off stdout messages. Default: True
 
@@ -167,6 +169,9 @@ def intrinsic_ratios(t0, n0, r_type='HaHb', product=False, silent=True, verbose=
 
     n0 : array like
       Array of electron densities in units of cm^-3
+
+    r_type : string
+      'HaHb', 'HgHb', or 'HdHb' to indicate which line ratio to calculate
 
     product : boolean
       If True, all the combination of (t0, n0) are used. 
@@ -227,14 +232,15 @@ def intrinsic_ratios(t0, n0, r_type='HaHb', product=False, silent=True, verbose=
     return ratio0, H1.recFitsFile
 #enddef
 
-def EBV_determine(HaHb_ratio, Te, ne, law='CCM89', silent=True, verbose=False):
+def EBV_determine(ratio0, Te, ne, r_type='HaHb', law='CCM89',
+                  silent=True, verbose=False):
     '''
     Function to get nebular E(B-V) from Ha/Hb ratio
 
     Parameters
     ----------
-    HaHb_ratio : float or array like
-      The observed Ha/Hb flux ratio from spectra
+    ratio0 : float or array like
+      The observed Ha/Hb, Hg/Hb, or Hd/Hb flux ratio from spectra
 
     Te : float or array like
       Electron temperature in Kelvin
@@ -242,6 +248,9 @@ def EBV_determine(HaHb_ratio, Te, ne, law='CCM89', silent=True, verbose=False):
     ne : float or array like
       Electron density in cm^-3
 
+    r_type : string
+      'HaHb', 'HgHb', or 'HdHb' to indicate which line ratio for [ratio0]
+      
     law : string
       String for dust attenuation "law". Default: "CCM89".
       Full list available from RC.getLaws()
@@ -261,23 +270,42 @@ def EBV_determine(HaHb_ratio, Te, ne, law='CCM89', silent=True, verbose=False):
     EBV0 : float or array like
       Nebular E(B-V)
 
+    i_ratio : float or array like
+      Intrinsic Balmer decrement ratio according to (Te,ne)
+
     Notes
     -----
     Created by Chun Ly, 22 November 2016
+     - Later modified to handle other Balmer decrements
     '''
 
     if silent == False:
         print '### Begin balmer_decrement.EBV_determine() | '+systime()
 
+    if r_type != 'HaHb' and r_type != 'HgHb' and r_type != 'HdHb':
+        print "Invalid [r_type]"
+        print "Exiting!!!"
+        return
+    #endif
+
     k_Ha = get_k_values(6562.80, law, silent=silent, verbose=verbose)
     k_Hb = get_k_values(4861.32, law, silent=silent, verbose=verbose)
+    k_Hg = get_k_values(4340.46, law, silent=silent, verbose=verbose)
+    k_Hd = get_k_values(4101.73, law, silent=silent, verbose=verbose)
     
-    HaHb0, _ = HaHb(Te, ne, product=False, silent=True, verbose=False)
+    # Mod on 22/11/2016 HaHb() -> intrinsic_ratios()
+    i_ratio, _ = intrinsic_ratios(Te, ne, r_type = r_type, product=False,
+                                  silent=True, verbose=False)
 
-    EBV0 = np.log10(HaHb_ratio / HaHb0) / -0.4 / (k_Ha - k_Hb)
+    # + on 22/11/2016
+    if r_type == 'HaHb': k_diff = k_Ha - k_Hb
+    if r_type == 'HgHb': k_diff = k_Hg - k_Hb
+    if r_type == 'HdHb': k_diff = k_Hd - k_Hb
+
+    EBV0 = np.log10(ratio0 / i_ratio) / -0.4 / k_diff # Mod on 22/11/2016
 
     if silent == False:
         print '### End balmer_decrement.EBV_determine() | '+systime()
 
-    return EBV0, HaHb0
+    return EBV0, i_ratio
 #enddef
