@@ -2,7 +2,11 @@
 balmer_decrement
 ====
 
-Determines Ha/Hb flux ratio based on T_e and n_e
+Determines Ha/Hb flux ratio based on T_e and n_e.
+
+Requirements:
+ PyNeb (http://www.iac.es/proyecto/PyNeb/)
+
 """
 
 import sys, os
@@ -35,6 +39,7 @@ def HaHb_Te_ne_plot(silent=True, verbose=False):
 	  
     Returns
     -------
+    PDF called 'HaHb_Te_ne_grid.pdf' is saved in Zcalbase.calc directory path
 
     Notes
     -----
@@ -50,12 +55,17 @@ def HaHb_Te_ne_plot(silent=True, verbose=False):
     
     fig, ax = plt.subplots()
     for ii in range(len(N_arr)):
-        ratio0 = HaHb(T_arr, N_arr[ii], product=True)
+        ratio0, recfile = HaHb(T_arr, N_arr[ii], product=True)
 
         t_label = r'$n_e = 10^'+str(int(np.log10(N_arr[ii])))+'$'+r' cm$^{-3}$'
         ax.plot(T_arr / 1E4, ratio0, style0[ii], label=t_label)
     #endfor
 
+    if recfile == 'h_i_rec_SH95.fits':
+        txt0 = 'Storey and Hummer (1995)'
+        ax.annotate(txt0, (0.01,0.01), xycoords='axes fraction',
+                    ha='left', va='bottom')
+        
     ax.set_xlabel(r'Electron Temperature, $T_e$ [$10^4$ K]', fontsize='16')
     ax.set_ylabel(r'I(H$\alpha$)/I(H$\beta$)', fontsize='16')
     ax.minorticks_on()
@@ -86,6 +96,10 @@ def HaHb(t0, n0, product=False, silent=True, verbose=False):
     n0 : array like
       Array of electron densities in units of cm^-3
 
+    product : boolean
+      If True, all the combination of (t0, n0) are used. 
+      If False (default), t0 and n0 must have the same size and are joined.      
+
     silent : boolean
       Turns off stdout messages. Default: True
 
@@ -115,6 +129,6 @@ def HaHb(t0, n0, product=False, silent=True, verbose=False):
 
     if silent == False: print '### End main | '+systime()
 
-    return Halpha/Hbeta
+    return Halpha/Hbeta, H1.recFitsFile
 #enddef
 
