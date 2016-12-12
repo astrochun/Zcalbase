@@ -55,14 +55,26 @@ def get_oiii(ratio0, n_e=100, default=False, silent=True):
      - Added labelling output
      - Documented code
      - Added n_e option
+    Modified by Chun Ly, 12 December 2016
+     - Change DataFileDict for default == True option
     '''
 
+    # + on 12/12/2016
+    if default == True:
+        DataFileDict = {'O3': {'atom': 'o_iii_atom_SZ00-WFD96.dat',
+                               'coll': 'o_iii_coll_AK99.dat'}}
+        pn.atomicData.setDataFileDict(DataFileDict)
+        label0 = 'PyNeb getTemDen - Collision: Aggarwal & Keenan 1999; \n'+\
+                 'Atomic: Wiese, Fuhr & Deters 1996, Storey & Zeippen 2000'
+
     O3 = pn.Atom('O', 3)
+
     if silent == False:
         print '## O3.atomFile : ', O3.atomFile, ' O3.collFile : ', O3.collFile
-
+        
     # + on 11/12/2016
-    if O3.atomFile == 'o_iii_atom_FFT04-SZ00.dat' and O3.collFile == 'o_iii_coll_SSB14.dat':
+    if O3.atomFile == 'o_iii_atom_FFT04-SZ00.dat' and \
+       O3.collFile == 'o_iii_coll_SSB14.dat':
         label0 = 'PyNeb getTemDen - Collision: Storey+ 2014; \n'+\
                  'Atomic: Froese Fischer+ 2004, Storey & Zeippen 2000'
                  
@@ -135,6 +147,8 @@ def plot_R_Te():
     Modified by Chun Ly, 11 December 2016
      - Additional documentation
      - Output plot to to PDF
+    Modified by Chun Ly, 11 December 2016
+     - Added default PyNeb for Te(OIII)
     '''
     
     ratio0 = np.arange(1.0, 4.3, 0.01) # logarithm of values
@@ -142,9 +156,13 @@ def plot_R_Te():
     
     Te, label1 = get_oiii(ratio0, silent=False)
 
+    # + on 12/12/2016
+    Te_def, label2 = get_oiii(ratio0, default=True, silent=False)
+
     fig, ax = plt.subplots()
 
     ax.plot(ratio0, Te, 'b--', label=label1)
+    ax.plot(ratio0, Te_def, 'r:',  label=label2)
     ax.set_xscale('log')
     ax.set_yscale('log')
     ax.set_xlabel(r'$\frac{I(\lambda4959) + I(\lambda5007)}{I(\lambda4363)}$', fontsize='16')
