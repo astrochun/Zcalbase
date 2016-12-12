@@ -123,6 +123,75 @@ def nicholls14():
     Te_OIII = a*(-1*np.log10(R)-b)**(-c) # in Kelvin
     return 10**iR, Te_OIII
 #enddef
+
+def eqn_for_logCt(x, t):
+    '''
+    Function to compute log(Ct) from Izotov et al. (2006), A&A, 448, 955
+
+    Parameters
+    ----------
+    x : array or array-like
+      electron density in terms of 1E-4 * n_e * t**-0.5
+
+    t : array or array-like
+      electron temperature in terms of 1E-4 T_e(OIII)
+    
+    Returns
+    -------
+    log(C_T): array or array-like
+      Eq. 2 in Izotov et al. (2006)
+
+    Notes
+    -----
+    Created by Chun Ly, 12 December 2016
+    '''
+
+    Ct = (8.44 - 1.09*t + 0.5*t**2 - 0.08*t**3)*((1+0.0004*x)/(1+0.044*x))
+    return np.log10(Ct)
+#enddef
+
+def izotov06_te(T_e=None, n_e=100., silent=True):
+    '''
+    Function to compute electron temperature according to Izotov et al. (2006),
+    A&A, 448, 955
+
+    Parameters
+    ----------
+    T_e : array or array-like
+      Electron temperature in terms of Kelvin. Default: None
+
+    n_e : array or array-like
+      Electron temperature in terms of 1E-4 T_e(OIII)
+    
+    Returns
+    -------
+    T_e : array or array-like
+      Electron temperature in terms of Kelvin.
+
+    flux2 : array or array-like
+      Ratio of [OIII]4959,5007/[OIII]4363
+
+    label0 : string
+      Legend labeling string
+
+    Notes
+    -----
+    Created by Chun Ly, 12 December 2016
+    '''
+
+    label0 = 'Izotov et al. (2006)'
+
+    if T_e == None:
+        T_e = np.arange(5000.0,1e5,10)
+
+    t = 1e-4 * T_e
+    x = 1e-4 * n_e * t**(-0.5)
+
+    logCt = eqn_for_logCt(x, t)
+    flux2 = 10**(1.432/t + logCt)
+
+    return T_e, flux2, label0
+#enddef
     
 def plot_R_Te():
     '''
@@ -159,10 +228,15 @@ def plot_R_Te():
     # + on 12/12/2016
     Te_def, label2 = get_oiii(ratio0, default=True, silent=False)
 
+    # + on 12/12/2016
+    Te_izo06, ratio0_izo06, label_izo06 = izotov06_te(silent=True)
+    
     fig, ax = plt.subplots()
 
     ax.plot(ratio0, Te, 'b--', label=label1)
-    ax.plot(ratio0, Te_def, 'r:',  label=label2)
+    ax.plot(ratio0, Te_def, 'r:',  label=label2) # + on 12/12/2016
+    ax.plot(ratio0_izo06, Te_izo06, 'g--', label=label_izo06) # + on 12/12/2016
+    
     ax.set_xscale('log')
     ax.set_yscale('log')
     ax.set_xlabel(r'$\frac{I(\lambda4959) + I(\lambda5007)}{I(\lambda4363)}$', fontsize='16')
@@ -176,7 +250,7 @@ def plot_R_Te():
 
     # Mod on 11/12/2016
     ax.set_xlim([10,10**4.3])
-    ax.set_ylim([1000,2E5])
+    ax.set_ylim([3000,2E5])
 
     # Write PDF file
     # + on 11/12/2016
