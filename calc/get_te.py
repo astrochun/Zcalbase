@@ -12,10 +12,19 @@ Requirements:
 import os
 import numpy as np
 import pyneb as pn
-from matplotlib import pyplot as plt
 
-DataFileDict = {'O2': {'atom': 'o_ii_atom_Z82-WFD96.dat',   'coll': 'o_ii_coll_P06-T07.dat'},
+from matplotlib import pyplot as plt
+from pylab import subplots_adjust
+
+# + on 12/12/2016
+from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
+from mpl_toolkits.axes_grid1.inset_locator import mark_inset
+
+DataFileDict = {'O2': {'atom': 'o_ii_atom_Z82-WFD96.dat', 'coll': 'o_ii_coll_P06-T07.dat'},
                 'O3': {'atom': 'o_iii_atom_FFT04-SZ00.dat', 'coll': 'o_iii_coll_SSB14.dat'}}
+
+#'Ne3': {'atom': 'ne_iii_atom_GMZ97.dat', 'coll': 'ne_iii_coll_McLB00.dat'}}
+#'N2': {'atom': 'n_ii_atom_GMZ97-WFD96.dat', 'coll': 'n_ii_coll_LB94.dat'},
 
 pn.atomicData.setDataFileDict(DataFileDict)
 
@@ -83,9 +92,6 @@ def get_oiii(ratio0, n_e=100, default=False, silent=True):
 
     return Te, label0
 #enddef
-
-#'Ne3': {'atom': 'ne_iii_atom_GMZ97.dat', 'coll': 'ne_iii_coll_McLB00.dat'}}
-#'N2': {'atom': 'n_ii_atom_GMZ97-WFD96.dat', 'coll': 'n_ii_coll_LB94.dat'},
 
 def nicholls14():
     '''
@@ -216,8 +222,9 @@ def plot_R_Te():
     Modified by Chun Ly, 11 December 2016
      - Additional documentation
      - Output plot to to PDF
-    Modified by Chun Ly, 11 December 2016
+    Modified by Chun Ly, 12 December 2016
      - Added default PyNeb for Te(OIII)
+     - Added inset zoom in plot
     '''
     
     ratio0 = np.arange(1.0, 4.3, 0.01) # logarithm of values
@@ -252,11 +259,32 @@ def plot_R_Te():
     ax.set_xlim([10,10**4.3])
     ax.set_ylim([3000,2E5])
 
+    # zoom-in inset panel | + on 12/12/2016
+    axins = zoomed_inset_axes(ax, 5, loc=7) #, bbox_to_anchor=[100,0.5]) # zoom = 6
+
+    axins.plot(ratio0, Te, 'b--')
+    axins.plot(ratio0, Te_def, 'r:')
+    axins.plot(ratio0_izo06, Te_izo06, 'g--')
+
+    axins.plot(Nic14_R, Nic14_Te, 'k-', label='Nicholls et al. (2014)')
+    
+    # sub region of the original image
+    x1, x2, y1, y2 = 75, 140, 10000, 15000
+    axins.set_xlim([x1, x2])
+    axins.set_ylim([y1, y2])
+    axins.set_xscale('log')
+    axins.minorticks_on()
+
+    mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="k", ls='dashed', lw=0.5)
+    
     # Write PDF file
     # + on 11/12/2016
     out_dir0 = os.path.dirname(__file__)+'/'
     outfile  = out_dir0 + 'Te_OIII.pdf'
 
+    subplots_adjust(left=0.025, bottom=0.025, top=0.975, right=0.975)
+
+    #fig.tight_layout()
     fig.savefig(outfile, bbox_inches='tight')
 #enddef
 
