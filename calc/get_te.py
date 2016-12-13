@@ -93,7 +93,7 @@ def get_oiii(ratio0, n_e=100, default=False, silent=True):
     return Te, label0
 #enddef
 
-def nicholls14():
+def nicholls14(palay=False):
     '''
     Function to compute electron temperature (T_e) of O++ from
     [OIII]4959,5007/OIII4363. Values are based on Eq. (2) in
@@ -101,7 +101,9 @@ def nicholls14():
 
     Parameters
     ----------
-    None
+    palay : boolean
+      Set to use the Palay et al. (2012) coefficients reported in Nicholls et al.
+      (2013), ApJS, 207, 21. Default: False
 
     Returns
     -------
@@ -111,23 +113,40 @@ def nicholls14():
     Te_OIII : array or array-like
       Electron temperature of O++ in Kelvins
 
+    label0 : string
+      Legend labeling string
+    
     Notes
     -----
     Created by Chun Ly, 9 December 2016
     Modified by Chun Ly, 11 December 2016
      - Additional documentation
+    Modified by Chun Ly, 12 December 2016
+     - Added palay keyword option for Palay et al. (2012), MNRAS, 423, L35-L39
+     - Added label string output
     '''
 
-    # From page 4
-    a = 13205.
-    b = 0.92506
-    c = 0.98062
-  
+    # Mod on 12/12/2016
+    if palay == False:
+        # From Page 4
+        print '## Using Nicholls et al. (2014)'
+        a = 13205.
+        b = 0.92506
+        c = 0.98062
+        label0 = 'Nicholls et al. (2014)'
+    else:
+        # From Table 4 on Page 16 of Nicholls et al. (2013)
+        print '## Using Palay et al. (2012)'
+        a = 13229.
+        b = 0.92350
+        c = 0.98196
+        label0 = 'Palay et al. (2012), Nicholls et al. (2013)'
+        
     iR = np.arange(1.0, 4.3, 0.01) # log([OIII]4959,5007/[OIII]4363)
     R = 1.0/10**(iR)               # [OIII]4363/[OIII]4959,5007
     
     Te_OIII = a*(-1*np.log10(R)-b)**(-c) # in Kelvin
-    return 10**iR, Te_OIII
+    return 10**iR, Te_OIII, label0
 #enddef
 
 def eqn_for_logCt(x, t):
@@ -225,6 +244,7 @@ def plot_R_Te():
     Modified by Chun Ly, 12 December 2016
      - Added default PyNeb for Te(OIII)
      - Added inset zoom in plot
+     - Added Palay et al. (2012) calibration
     '''
     
     ratio0 = np.arange(1.0, 4.3, 0.01) # logarithm of values
@@ -241,8 +261,8 @@ def plot_R_Te():
     fig, ax = plt.subplots()
 
     ax.plot(ratio0, Te, 'b--', label=label1)
-    ax.plot(ratio0, Te_def, 'r:',  label=label2) # + on 12/12/2016
-    ax.plot(ratio0_izo06, Te_izo06, 'g--', label=label_izo06) # + on 12/12/2016
+    ax.plot(ratio0, Te_def, 'r--',  label=label2) # + on 12/12/2016
+    ax.plot(ratio0_izo06, Te_izo06, 'g:', label=label_izo06) # + on 12/12/2016
     
     ax.set_xscale('log')
     ax.set_yscale('log')
@@ -250,9 +270,13 @@ def plot_R_Te():
     ax.set_ylabel(r'$T_e({\rm O}^{++}$) (K)', fontsize='16')
 
     # Get Nicholls calibration
-    Nic14_R, Nic14_Te = nicholls14()
-    ax.plot(Nic14_R, Nic14_Te, 'k-', label='Nicholls et al. (2014)')
+    Nic14_R, Nic14_Te, Nic14_label = nicholls14()
+    ax.plot(Nic14_R, Nic14_Te, 'k-', label=Nic14_label)
 
+    # Get Palay+(2012) calibration | + on 12/12/2016
+    Pal12_R, Pal12_Te, Pal12_label = nicholls14(palay=True)
+    ax.plot(Pal12_R, Pal12_Te, 'c-.', label=Pal12_label)
+    
     ax.legend(loc='upper right', frameon=False, fontsize='x-small')
 
     # Mod on 11/12/2016
@@ -263,18 +287,20 @@ def plot_R_Te():
     axins = zoomed_inset_axes(ax, 5, loc=7) #, bbox_to_anchor=[100,0.5]) # zoom = 6
 
     axins.plot(ratio0, Te, 'b--')
-    axins.plot(ratio0, Te_def, 'r:')
-    axins.plot(ratio0_izo06, Te_izo06, 'g--')
+    axins.plot(ratio0, Te_def, 'r--')
+    axins.plot(ratio0_izo06, Te_izo06, 'g:')
 
-    axins.plot(Nic14_R, Nic14_Te, 'k-', label='Nicholls et al. (2014)')
+    axins.plot(Nic14_R, Nic14_Te, 'k-', label=Nic14_label)
+    axins.plot(Pal12_R, Pal12_Te, 'c-.', label=Pal12_label)
     
-    # sub region of the original image
+    # sub region of the original image | + on 12/12/2016
     x1, x2, y1, y2 = 75, 140, 10000, 15000
     axins.set_xlim([x1, x2])
     axins.set_ylim([y1, y2])
     axins.set_xscale('log')
     axins.minorticks_on()
 
+    # Draw inset box - dashed black line.
     mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="k", ls='dashed', lw=0.5)
     
     # Write PDF file
