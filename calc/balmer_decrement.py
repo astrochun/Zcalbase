@@ -139,7 +139,7 @@ def get_k_values(wave, law='CCM89', silent=True, verbose=False):
 	  
     Returns
     -------
-    PDF called 'HaHb_Te_ne_grid.pdf' is saved in Zcalbase.calc directory path
+    k value at wave
 
     Notes
     -----
