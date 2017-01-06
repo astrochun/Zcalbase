@@ -158,7 +158,8 @@ def get_k_values(wave, law='CCM89', silent=True, verbose=False):
     return np.log10(RC.getCorr(wave)) / 0.4
 #enddef
 
-def intrinsic_ratios(t0, n0, r_type='HaHb', product=False, silent=True, verbose=False):
+def intrinsic_ratios(t0, n0, r_type='HaHb', product=False, silent=True,
+                     verbose=False):
     '''
     Function to obtain Ha/Hb, Hg/Hb, or Hd/Hb flux ratios
 
@@ -175,7 +176,7 @@ def intrinsic_ratios(t0, n0, r_type='HaHb', product=False, silent=True, verbose=
 
     product : boolean
       If True, all the combination of (t0, n0) are used. 
-      If False (default), t0 and n0 must have the same size and are joined.      
+      If False (default), t0 and n0 must have the same size and are joined.
 
     silent : boolean
       Turns off stdout messages. Default: True
